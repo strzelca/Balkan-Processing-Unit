@@ -8,6 +8,10 @@
 #define MEMORY_END 0xFFFF
 
 #define STACK_START 0xFFFE
+#define STACK_END 0xFF00
+
+
+// magic number to start program
 
 #define PROGRAM_START 0xBEEF
 #define PROGRAM_END 0xDEAD
