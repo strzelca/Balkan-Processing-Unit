@@ -11,13 +11,7 @@ int main(int argc, char **argv) {
     // load program memory from file
     load_memory_from_file(cpu->memory, "memory.bin");
 
-    // find magic number in memory to start program and set pc to next instruction
-    for (int i = 0; i < MEMORY_SIZE; i++) {
-        if (cpu->memory->addr[i] == PROGRAM_START) {
-            cpu->registers->pc = &cpu->memory->addr[i+1];
-            break;
-        }
-    }
+    find_magic_number(cpu);
 
     // fetch, decode, execute while pc is not at end of program
     while (*cpu->registers->pc != PROGRAM_END) {

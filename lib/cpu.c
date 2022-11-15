@@ -74,12 +74,24 @@ void load_memory_from_file(Memory *memory, char *filename) {
     fclose(file);
 }
 
+// find magic number in memory and set pc to that address
+void find_magic_number(CPU *cpu) {
+    for (int i = 0; i < MEMORY_SIZE; i++) {
+        if (cpu->memory->addr[i] == PROGRAM_START) {
+            cpu->registers->pc = &cpu->memory->addr[i+1];
+            return;
+        }
+    }
+    printf("Magic number not found in memory!\n");
+    exit(1);
+}
+
 // get virtual address from physical address
 uint16_t get_virtual_address(Memory *memory, uint16_t *physical_address) {
     uint16_t *physical_address_start = &memory->addr[MEMORY_START];
     
     int offset = (intptr_t) physical_address - (intptr_t) physical_address_start;
-    return offset >> 0x1;
+    return offset >> 1;
 
 }
 
@@ -95,8 +107,8 @@ void print_flags_state(CPU *cpu) {
 // print cpu state
 void print_cpu_state(CPU *cpu) {
     printf("CPU STATE:\n");
-    printf("A: %d - 0x%X\n", cpu->registers->a, cpu->registers->a);
-    printf("B: %d - 0x%X\n", cpu->registers->b, cpu->registers->b);
+    printf("A: %d - 0x%X\n", (int16_t) cpu->registers->a, cpu->registers->a);
+    printf("B: %d - 0x%X\n", (int16_t) cpu->registers->b, cpu->registers->b);
     printf("SP: 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->sp));
     printf("PC: 0x%04X -> 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->pc), *cpu->registers->pc);
     printf("MEM: 0x%04X -> 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->mem), *cpu->registers->mem);
@@ -158,8 +170,52 @@ void decode_execute(CPU *cpu) {
     case SHF:
         _SHF(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
         break;
+    case ROT:
+        _ROT(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
+        break;
+    case AND:
+        _AND(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
+        break;
+    case OR:
+        _OR(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
+        break;
+    case XOR:
+        _XOR(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
+        break;
+    case NOT:
+        _NOT(decode_data(cpu), cpu->registers->flags);
+        break;
+    case CMP:
+        _CMP(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
+        break;
+    case JMP:
+        cpu->registers->pc = _JMP(decode_data(cpu), cpu);
+        break;
+    case JZ:
+        cpu->registers->pc = _JZ(decode_data(cpu), cpu);
+        break;
+    case JNZ:
+        cpu->registers->pc = _JNZ(decode_data(cpu), cpu);
+        break;
+    case JG:
+        cpu->registers->pc = _JG(decode_data(cpu), cpu);
+        break;
+    case JL:
+        cpu->registers->pc = _JL(decode_data(cpu), cpu);
+        break;
+    case JGE:
+        cpu->registers->pc = _JGE(decode_data(cpu), cpu);
+        break;
+    case JLE:
+        cpu->registers->pc = _JLE(decode_data(cpu), cpu);
+        break;
+    case JE:
+        cpu->registers->pc = _JE(decode_data(cpu), cpu);
+        break;
+    case JNE:
+        cpu->registers->pc = _JNE(decode_data(cpu), cpu);
+        break;
     default:
-        _END(cpu);
         printf("Unknown instruction: 0x%04X\n", instruction);
         break;
     }

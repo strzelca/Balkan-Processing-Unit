@@ -58,6 +58,7 @@ extern void print_flags_state(CPU *cpu);
 extern int check_memory_clean(Memory *memory);
 extern void write_memory_to_file(Memory *memory, char *filename);
 extern void load_memory_from_file(Memory *memory, char *filename);
+extern void find_magic_number(CPU *cpu);
 
 
 // execute instruction
