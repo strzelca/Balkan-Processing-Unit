@@ -19,13 +19,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    // set registers to a = 10, b = 20
-    cpu->registers->a = 10;
-    cpu->registers->b = 10;
-
     // fetch, decode, execute while pc is not at end of program
     while (*cpu->registers->pc != PROGRAM_END) {
-        printf("\n\nEXECUTE PC: 0x%04X\n", *cpu->registers->pc);
+        printf("EXECUTE PC: 0x%04X\n", *cpu->registers->pc);
         decode_execute(cpu);
     }
 

@@ -6,7 +6,7 @@
 #include "cpu.h"
 #include "isa.h"
 
-#define DEBUG 1
+// #define DEBUG
 
 
 // initialize memory 0x0000 - 0xFFFF and set all at 0 
@@ -50,13 +50,14 @@ void kill_cpu(CPU *cpu) {
 }
 
 int check_memory_clean(Memory *memory) {
+    uint8_t c = 0;
     for (int i = 0; i < MEMORY_SIZE; i++) {
         if (memory->addr[i] != 0) {
             printf("Memory not clean at address: 0x%04X - Value: 0x%04X\n", i, memory->addr[i]);
-            return 1;
+            c++;
         }
     }
-    return 0;
+    return c;
 }
 
 void write_memory_to_file(Memory *memory, char *filename) {
@@ -73,6 +74,15 @@ void load_memory_from_file(Memory *memory, char *filename) {
     fclose(file);
 }
 
+// get virtual address from physical address
+uint16_t get_virtual_address(Memory *memory, uint16_t *physical_address) {
+    uint16_t *physical_address_start = &memory->addr[MEMORY_START];
+    
+    int offset = (intptr_t) physical_address - (intptr_t) physical_address_start;
+    return offset >> 0x1;
+
+}
+
 // print flags status
 void print_flags_state(CPU *cpu) {
     printf("FLAGS:\n");
@@ -87,13 +97,10 @@ void print_cpu_state(CPU *cpu) {
     printf("CPU STATE:\n");
     printf("A: %d - 0x%X\n", cpu->registers->a, cpu->registers->a);
     printf("B: %d - 0x%X\n", cpu->registers->b, cpu->registers->b);
-    printf("SP: %p\n", cpu->registers->sp);
-    printf("PC: %p\n", cpu->registers->pc);
-    printf("PC VALUE: 0x%04X\n", *cpu->registers->pc);
-    printf("MEM: %p\n", cpu->registers->mem);
-    if (check_memory_clean(cpu->memory) == 0) {
-        printf("Memory clean\n");
-    }
+    printf("SP: 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->sp));
+    printf("PC: 0x%04X -> 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->pc), *cpu->registers->pc);
+    printf("MEM: 0x%04X -> 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->mem), *cpu->registers->mem);
+    if (check_memory_clean(cpu->memory) == 0) { printf("Memory clean\n"); }
     print_flags_state(cpu);
 }
 
@@ -111,16 +118,17 @@ uint16_t fetch(CPU *cpu) {
 
 // get register shifting program counter to next 2 bytes
 // 16 bit register
-uint16_t *decode_register(CPU *cpu) {
+uint16_t *decode_data(CPU *cpu) {
     uint16_t reg = fetch(cpu);
     switch (reg) {
         case A:
             return &cpu->registers->a;
         case B:
             return &cpu->registers->b;
+        case MEM:
+            return cpu->registers->mem;
         default:
-            printf("Invalid register: 0x%04X\n", reg);
-            return NULL;
+            return &reg;
     }
 }
 
@@ -130,10 +138,25 @@ void decode_execute(CPU *cpu) {
     switch (instruction)
     {
     case ADD:
-        _ADD(decode_register(cpu), decode_register(cpu), cpu->registers->flags);
+        _ADD(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
         break;
     case SUB:
-        _SUB(decode_register(cpu), decode_register(cpu), cpu->registers->flags);
+        _SUB(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
+        break;
+    case MUL:
+        _MUL(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
+        break;
+    case DIV:
+        _DIV(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
+        break;
+    case MOV:
+        _MOV(decode_data(cpu), decode_data(cpu));
+        break;
+    case LDR:
+         cpu->registers->mem = _LDR(*decode_data(cpu), cpu);
+        break;
+    case SHF:
+        _SHF(decode_data(cpu), decode_data(cpu), cpu->registers->flags);
         break;
     default:
         _END(cpu);

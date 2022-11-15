@@ -1,5 +1,5 @@
 CC := clang
-CFLAGS := 
+CFLAGS := -Wno-return-stack-address
 LDFLAGS :=
 
 SRC := $(wildcard *.c lib/*.c)

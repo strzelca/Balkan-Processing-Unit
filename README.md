@@ -27,3 +27,28 @@ Do A - B and store result into A
 ```assembly
 SUB A, B
 ``` 
+
+Do A * B and store result into A
+```assembly
+MUL A, B
+``` 
+
+Do A / B and store result into A
+```assembly
+DIV A, B
+``` 
+
+Move B value into A
+```assembly
+MOV A, B
+``` 
+
+Load address into MEM register
+```assembly
+LDR 0x%%%%
+``` 
+
+Shift A by B bits
+```assembly
+SHF A, B
+``` 

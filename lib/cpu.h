@@ -39,7 +39,7 @@ typedef struct _register {
     Flags *flags;
 } Register;
 
-// struct for memory with addresses from 0x00 to 0xFF (256 bytes)
+// struct for memory with addresses from 0x0000 to 0xFFFF (65535 bytes)
 typedef struct _memory {
     uint16_t *addr;
 } Memory;
