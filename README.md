@@ -26,7 +26,6 @@ Do A - B and store result into A
 ```assembly
 SUB A, B
 ``` 
-<<<<<<< HEAD
 
 Do A * B and store result into A
 ```assembly
@@ -52,5 +51,3 @@ Shift A by B bits
 ```assembly
 SHF A, B
 ``` 
-=======
->>>>>>> c45a3f9a985f9412203bfd4c77a03ee12e160c2f
