@@ -10,16 +10,17 @@ int main(int argc, char **argv) {
 
     // load program memory from file
     load_memory_from_file(cpu->memory, "memory.bin");
-
     find_magic_number(cpu);
 
     // fetch, decode, execute while pc is not at end of program
-    while (*cpu->registers->pc != PROGRAM_END) {
-        printf("EXECUTE PC: 0x%04X\n", *cpu->registers->pc);
-        decode_execute(cpu);
-    }
+    //while (*cpu->registers->pc != PROGRAM_END) {
+    //    printf("EXECUTE PC: 0x%04X\n", *cpu->registers->pc);
+    //    decode_execute(cpu);
+    //}
+
 
     // print cpu state
+    cpu->mmu->bank[0]->bank_memory->addr[1] = 0x0001;
     print_cpu_state(cpu);
 
     kill_cpu(cpu);

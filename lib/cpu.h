@@ -2,21 +2,31 @@
 #ifndef CPU_H__
 #define CPU_H__
 
+#include <stdint.h>
+
+#include "mmu.h"
+
+
+// MEMORY
+
 #define MEMORY_SIZE 0xFFFF
 
 #define MEMORY_START 0x0000
 #define MEMORY_END 0xFFFF
 
+
+// STACK
+
 #define STACK_START 0xFFFE
 #define STACK_END 0xFF00
 
 
-// magic number to start program
+// MAGIC
 
 #define PROGRAM_START 0xBEEF
 #define PROGRAM_END 0xDEAD
 
-#include <stdint.h>
+
 
 // crete a struct for cpu flags zero, carry, negative, overflow as 1 bit each array
 typedef struct _flags {
@@ -48,11 +58,14 @@ typedef struct _memory {
 typedef struct _cpu {
     Register *registers;
     Memory *memory;
+    struct _mmu *mmu;
 } CPU;
 
 
 extern CPU *init_cpu();
 extern void kill_cpu(CPU *cpu);
+extern void init_memory(Memory *memory);
+extern void kill_memory(Memory *memory);
 extern void print_cpu_state(CPU *cpu);
 extern void print_flags_state(CPU *cpu);
 extern int check_memory_clean(Memory *memory);

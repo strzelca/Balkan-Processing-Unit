@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <unistd.h>
 
 #include "cpu.h"
 #include "isa.h"
@@ -9,10 +10,10 @@
 // #define DEBUG
 
 
-// initialize memory 0x0000 - 0xFFFF and set all at 0 
+// initialize memory 0x0000 - MEMORY_SIZE and set all at 0 
 void init_memory(Memory *memory) {
-    memory->addr = (uint16_t *)malloc(0xFFFF * sizeof(uint16_t));
-    memset(memory->addr, 0, 0xFFFF);
+    memory->addr = (uint16_t *)malloc(MEMORY_SIZE * sizeof(uint16_t));
+    memset(memory->addr, 0, MEMORY_SIZE);
 }
 
 // initialize registers
@@ -27,13 +28,13 @@ void init_registers(Register *registers) {
 }
 
 // initialize cpu
-
 CPU *init_cpu() {
     CPU *cpu = (CPU*)malloc(sizeof(CPU));
     cpu->registers = (Register*)malloc(sizeof(Register));
     init_registers(cpu->registers);
     cpu->memory = (Memory*)malloc(sizeof(Memory));
     init_memory(cpu->memory);
+    cpu->mmu = init_mmu();
 
     cpu->registers->mem = &cpu->memory->addr[MEMORY_START];
     cpu->registers->sp = &cpu->memory->addr[STACK_START];
@@ -46,6 +47,7 @@ void kill_cpu(CPU *cpu) {
     free(cpu->registers);
     free(cpu->memory->addr);
     free(cpu->memory);
+    kill_mmu(cpu->mmu);
     free(cpu);
 }
 
@@ -57,6 +59,57 @@ int check_memory_clean(Memory *memory) {
             c++;
         }
     }
+    return c;
+}
+
+int check_memory(Memory *memory) {
+    // scan memory and print percentage progress
+    uint8_t c = 0;
+    for (int i = 0; i < MEMORY_SIZE; i++) {
+        if (memory->addr[i] != 0) {
+            printf("Memory not clean at address: 0x%04X - Value: 0x%04X\n", i, memory->addr[i]);
+            c++;
+        }
+        if (i % 1000 == 0) {
+            printf("Memory scan progress: %d%%\r", (i * 100) / MEMORY_SIZE + 1);
+            fflush(stdout);
+            usleep(5000);
+        }
+    }
+    printf("\n");
+    return c;
+}
+
+int check_mapped_integrity(MMU *mmu){
+    uint8_t c = 0;
+    for (int i = 0; i < VIRTUAL_ADDRESS_TABLE_SIZE; i++) {
+        if (i >= 0x0000 && i < ROM_VIRTUAL_ADDRESS_END) {
+            uint8_t bank = (i / MEMORY_SIZE);
+            uint8_t offset = i - (bank * MEMORY_SIZE);
+            if (mmu->bank[bank]->bank_memory->addr[offset] != 0) {
+                printf("Virtual address table not clean at address: 0x%05X - Value: 0x%04X\n", i, mmu->bank[bank]->bank_memory->addr[offset]);
+                c++;
+            }
+        } else if (i >= VRAM_VIRTUAL_ADDRESS_START && i < VRAM_VIRTUAL_ADDRESS_END) {
+            uint8_t offset = i - VRAM_VIRTUAL_ADDRESS_START;
+            if (mmu->vram->vram[offset] != 0) {
+                printf("Virtual address table not clean at address: 0x%05X - Value: 0x%04X\n", i, mmu->vram->vram[offset]);
+                c++;
+            }
+        } else if (i >= IO_VIRTUAL_ADDRESS_START && i < IO_VIRTUAL_ADDRESS_END) {
+            uint8_t offset = i - IO_VIRTUAL_ADDRESS_START;
+            if (mmu->io->io[offset] != 0) {
+                printf("Virtual address table not clean at address: 0x%05X - Value: 0x%04X\n", i, mmu->io->io[offset]);
+                c++;
+            }
+        }
+        if (i % 1000 == 0) {
+            printf("Mapped memory scan progress: %d%%\r", (i * 100) / VIRTUAL_ADDRESS_TABLE_SIZE + 1);
+            fflush(stdout);
+            usleep(1000);
+        }
+    }
+    printf("\n");
     return c;
 }
 
@@ -97,11 +150,13 @@ uint16_t get_virtual_address(Memory *memory, uint16_t *physical_address) {
 
 // print flags status
 void print_flags_state(CPU *cpu) {
-    printf("FLAGS:\n");
-    printf("Z: %d - ", cpu->registers->flags->zero);
-    printf("C: %d - ", cpu->registers->flags->carry);
-    printf("N: %d - ", cpu->registers->flags->negative);
-    printf("O: %d\n", cpu->registers->flags->overflow);
+    printf("");
+    printf("FLAGS:\nZ: %d - C: %d - N: %d - O: %d\n",
+            cpu->registers->flags->zero,
+            cpu->registers->flags->carry,
+            cpu->registers->flags->negative,
+            cpu->registers->flags->overflow
+    );
 }
 
 // print cpu state
@@ -112,7 +167,8 @@ void print_cpu_state(CPU *cpu) {
     printf("SP: 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->sp));
     printf("PC: 0x%04X -> 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->pc), *cpu->registers->pc);
     printf("MEM: 0x%04X -> 0x%04X\n", get_virtual_address(cpu->memory, cpu->registers->mem), *cpu->registers->mem);
-    if (check_memory_clean(cpu->memory) == 0) { printf("Memory clean\n"); }
+    if (check_memory(cpu->memory) == 0) { printf("Memory clean\n"); }
+    if (check_mapped_integrity(cpu->mmu) == 0) { printf("Mapped Memory Clean\n"); }
     print_flags_state(cpu);
 }
 

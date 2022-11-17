@@ -43,7 +43,7 @@
 
 
 
-/* ARITHMETIC */
+/* ARITHMETIC OPERATORS */
 
 // ADD A, B into A
 extern void _ADD(uint16_t *a, uint16_t *b, Flags *flags);
@@ -109,7 +109,6 @@ extern void *_JLE(uint16_t *addr, CPU *cpu);
 extern void *_JE(uint16_t *addr, CPU *cpu);
 // JNE to addr if not equal to flag is set
 extern void *_JNE(uint16_t *addr, CPU *cpu);
-
 
 
 
